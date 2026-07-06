@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bible Study Planner</title>
+
+  <style>
+    :root {
+      --navy: #070b1a;
+      --cream: #fff7e8;
+      --pink: #f7a7c4;
+      --green: #9fd8b4;
+      --soft: rgba(255, 247, 232, 0.72);
+      --glass: rgba(255, 247, 232, 0.08);
+      --border: rgba(255, 247, 232, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: Inter, system-ui, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--navy);
+      color: var(--cream);
+      overflow-x: hidden;
+    }
+
+    canvas {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+    }
+
+    .container {
+      width: min(1100px, 92%);
+      margin: auto;
+      padding: 40px 0;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 70px;
+    }
+
+    .logo {
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      font-size: 1.3rem;
+    }
+
+    .pill {
+      border: 1px solid var(--border);
+      padding: 10px 18px;
+      border-radius: 999px;
+      color: var(--soft);
+      backdrop-filter: blur(14px);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 40px;
+      align-items: center;
+      margin-bottom: 50px;
+    }
+
+    h1 {
+      font-size: clamp(3rem, 8vw, 6.5rem);
+      line-height: 0.9;
+      margin: 0;
+      letter-spacing: -0.08em;
+    }
+
+    .highlight {
+      color: var(--pink);
+    }
+
+    .subtitle {
+      color: var(--soft);
+      font-size: 1.1rem;
+      max-width: 560px;
+      line-height: 1.7;
+      margin-top: 24px;
+    }
+
+    .card {
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 32px;
+      padding: 28px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 30px 80px rgba(0,0,0,0.3);
+    }
+
+    form {
+      display: grid;
+      gap: 14px;
+    }
+
+    input, textarea, select, button {
+      width: 100%;
+      border: 0;
+      border-radius: 16px;
+      padding: 15px 16px;
+      font-size: 1rem;
+    }
+
+    input, textarea, select {
+      background: rgba(255,255,255,0.08);
+      color: var(--cream);
+      border: 1px solid var(--border);
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: rgba(255,247,232,0.45);
+    }
+
+    button {
+      background: linear-gradient(135deg, var(--pink), var(--green));
+      color: var(--navy);
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 40px 0 18px;
+    }
+
+    .section-title h2 {
+      margin: 0;
+      font-size: 1.7rem;
+      letter-spacing: -0.04em;
+    }
+
+    .appointments {
+      display: grid;
+      gap: 16px;
+    }
+
+    .appointment {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 20px;
+      align-items: center;
+      padding: 20px;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: rgba(255, 247, 232, 0.06);
+    }
+
+    .appointment h3 {
+      margin: 0 0 8px;
+      color: var(--green);
+    }
+
+    .appointment p {
+      margin: 4px 0;
+      color: var(--soft);
+    }
+
+    .delete {
+      background: rgba(247, 167, 196, 0.15);
+      color: var(--pink);
+      border: 1px solid rgba(247, 167, 196, 0.4);
+      padding: 10px 14px;
+      width: auto;
+    }
+
+    .empty {
+      color: var(--soft);
+      padding: 30px;
+      text-align: center;
+      border: 1px dashed var(--border);
+      border-radius: 24px;
+    }
+
+    @media (max-width: 850px) {
+      .hero {
+        grid-template-columns: 1fr;
+      }
+
+      header {
+        gap: 16px;
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="dots"></canvas>
+
+  <main class="container">
+    <header>
+      <div class="logo">Bible Study Planner</div>
+      <div class="pill" id="today"></div>
+    </header>
+
+    <section class="hero">
+      <div>
+        <h1>
+  Philly3<br />
+  <span class="highlight">Bible Study Planner</span>
+</h1>
+        <p class="subtitle">
+  A little thing to help you.
+</p>
+      </div>
+
+      <div class="card">
+        <form id="studyForm">
+          <input id="student" placeholder="Contact name" required />
+          <input id="teacher" placeholder="Teacher / member assigned" required />
+          <input id="date" type="text" placeholder="Date — example: 2026-07-06" required />
+<input id="time" type="text" placeholder="Time — example: 7:30 PM" required />
+
+          <select id="status">
+            <option>Scheduled</option>
+            <option>Confirmed</option>
+            <option>Needs follow-up</option>
+            <option>Completed</option>
+          </select>
+
+          <textarea id="notes" rows="3" placeholder="Topic, Zoom link, location, or notes"></textarea>
+
+          <button type="submit">Add Bible Study</button>
+        </form>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title">
+        <h2>Upcoming Studies</h2>
+        <div class="pill" id="count">0 booked</div>
+      </div>
+
+      <div class="appointments" id="appointments"></div>
+    </section>
+  </main>
+
+  <script>
+  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyMO9mgjzMmzN0QtH0b51FMIuw66eWycAfgij47KkxoR3E1JIJJA8vmUix0x64mwMq9/exec";
+
+  const form = document.getElementById("studyForm");
+  const appointmentsEl = document.getElementById("appointments");
+  const countEl = document.getElementById("count");
+
+  let studies = [];
+
+  document.getElementById("today").textContent =
+    new Date().toLocaleDateString(undefined, {
+      weekday: "long",
+      month: "long",
+      day: "numeric"
+    });
+
+  async function loadStudies() {
+    appointmentsEl.innerHTML = `
+      <div class="empty">
+        Loading Bible studies...
+      </div>
+    `;
+
+    try {
+      const response = await fetch(GOOGLE_SCRIPT_URL);
+      studies = await response.json();
+      renderStudies();
+    } catch (error) {
+      appointmentsEl.innerHTML = `
+        <div class="empty">
+          Could not load from Google Sheets. Check your Apps Script URL.
+        </div>
+      `;
+      console.error(error);
+    }
+  }
+
+async function addStudy(study) {
+  await fetch(GOOGLE_SCRIPT_URL, {
+    method: "POST",
+    mode: "no-cors",
+    body: JSON.stringify(study)
+  });
+}
+
+// ← PASTE THE NEW FUNCTIONS HERE
+
+function formatDate(value) {
+  const date = new Date(value);
+
+  if (isNaN(date)) return value;
+
+  return date.toLocaleDateString([], {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  });
+}
+
+function formatTime(value) {
+  const date = new Date(value);
+
+  if (isNaN(date)) return value;
+
+  return date.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit"
+  });
+}
+
+function renderStudies() {
+    appointmentsEl.innerHTML = "";
+
+studies.sort((a, b) => {
+  return `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`);
+});
+
+    countEl.textContent = `${studies.length} booked`;
+
+    if (studies.length === 0) {
+      appointmentsEl.innerHTML = `
+        <div class="empty">
+          No Bible studies booked yet.
+        </div>
+      `;
+      return;
+    }
+
+    studies.forEach((study) => {
+      const date = new Date(`${study.date} ${study.time}`);
+
+      const card = document.createElement("div");
+      card.className = "appointment";
+
+      card.innerHTML = `
+        <div>
+          <h3>${study.student}</h3>
+<p><strong>When:</strong> ${formatDate(study.date)} at ${formatTime(study.time)}</p>
+          <p><strong>Status:</strong> ${study.status}</p>
+          ${study.notes ? `<p><strong>Notes:</strong> ${study.notes}</p>` : ""}
+        </div>
+      `;
+
+      appointmentsEl.appendChild(card);
+    });
+  }
+
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+
+    const submitButton = form.querySelector("button");
+    submitButton.textContent = "Saving...";
+    submitButton.disabled = true;
+
+    const newStudy = {
+      student: document.getElementById("student").value,
+      teacher: document.getElementById("teacher").value,
+      date: document.getElementById("date").value,
+      time: document.getElementById("time").value,
+      status: document.getElementById("status").value,
+      notes: document.getElementById("notes").value
+    };
+
+    try {
+      await addStudy(newStudy);
+      form.reset();
+      await loadStudies();
+    } catch (error) {
+      alert("Something went wrong saving to Google Sheets.");
+      console.error(error);
+    }
+
+    submitButton.textContent = "Add Bible Study";
+    submitButton.disabled = false;
+  });
+
+  loadStudies();
+
+  // Interactive dot background
+  const canvas = document.getElementById("dots");
+  const ctx = canvas.getContext("2d");
+
+  let dots = [];
+  let mouse = { x: null, y: null };
+
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    createDots();
+  }
+
+  function createDots() {
+    dots = [];
+    const amount = Math.floor((canvas.width * canvas.height) / 12000);
+
+    for (let i = 0; i < amount; i++) {
+      dots.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 3 + 2,
+        dx: (Math.random() - 0.5) * 0.35,
+        dy: (Math.random() - 0.5) * 0.35
+      });
+    }
+  }
+
+  function drawDots() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    dots.forEach(dot => {
+      dot.x += dot.dx;
+      dot.y += dot.dy;
+
+      if (dot.x < 0 || dot.x > canvas.width) dot.dx *= -1;
+      if (dot.y < 0 || dot.y > canvas.height) dot.dy *= -1;
+
+      const dist = Math.hypot(mouse.x - dot.x, mouse.y - dot.y);
+      const shrink = dist < 110 ? Math.max(0.8, dot.r - 2) : dot.r;
+      const stretch = dist < 110 ? 1.8 : 1;
+
+      ctx.beginPath();
+      ctx.ellipse(dot.x, dot.y, shrink * stretch, shrink, 0, 0, Math.PI * 2);
+      ctx.fillStyle = dist < 110
+        ? "rgba(247, 167, 196, 0.85)"
+        : "rgba(159, 216, 180, 0.35)";
+      ctx.fill();
+    });
+
+    requestAnimationFrame(drawDots);
+  }
+
+  window.addEventListener("mousemove", e => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+  });
+
+  window.addEventListener("resize", resizeCanvas);
+
+  resizeCanvas();
+  drawDots();
+</script>
+</body>
+</html>
