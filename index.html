@@ -214,7 +214,35 @@
 
     font-variant-numeric:tabular-nums;
 }
+.footer-links{
+    margin-top:50px;
+    margin-bottom:30px;
+    text-align:center;
+}
 
+.footer-links a{
+
+    font-family:"Comfortaa",sans-serif;
+
+    text-decoration:none;
+
+    color:var(--green);
+
+    font-size:1rem;
+
+    transition:.25s ease;
+
+    opacity:.75;
+}
+
+.footer-links a:hover{
+
+    color:var(--pink);
+
+    opacity:1;
+
+    letter-spacing:.04em;
+}
 @media (max-width: 850px) {
       .hero {
         grid-template-columns: 1fr;
@@ -282,6 +310,12 @@
       </div>
 
       <div class="appointments" id="appointments"></div>
+
+<div class="footer-links">
+    <a href="https://mm.watv.org/login.wmc" target="_blank">
+        My Memo
+    </a>
+</div>
     </section>
   </main>
 
