@@ -2,7 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;500;700&display=swap" rel="stylesheet">
   <title>Bible Study Planner</title>
 
   <style>
@@ -189,7 +194,28 @@
       border-radius: 24px;
     }
 
-    @media (max-width: 850px) {
+.clock{
+    margin-top:12px;
+    text-align:right;
+
+    font-family:"Comfortaa",sans-serif;
+
+    font-size:1.15rem;
+
+    font-weight:500;
+
+    letter-spacing:.08em;
+
+    color:var(--cream);
+
+    opacity:.9;
+
+    user-select:none;
+
+    font-variant-numeric:tabular-nums;
+}
+
+@media (max-width: 850px) {
       .hero {
         grid-template-columns: 1fr;
       }
@@ -207,10 +233,14 @@
   <canvas id="dots"></canvas>
 
   <main class="container">
-    <header>
-      <div class="logo">Bible Study Planner</div>
+<header>
+  <div class="logo">Bible Study Planner</div>
+
+  <div style="text-align:right;">
       <div class="pill" id="today"></div>
-    </header>
+      <div class="header-clock" id="clock"></div>
+  </div>
+</header>
 
     <section class="hero">
       <div>
@@ -241,6 +271,7 @@
 
           <button type="submit">Add Bible Study</button>
         </form>
+
       </div>
     </section>
 
@@ -299,7 +330,6 @@ async function addStudy(study) {
   });
 }
 
-// ← PASTE THE NEW FUNCTIONS HERE
 
 function formatDate(value) {
   const date = new Date(value);
@@ -452,7 +482,21 @@ studies.sort((a, b) => {
   });
 
   window.addEventListener("resize", resizeCanvas);
+function updateClock() {
 
+    const now = new Date();
+
+    document.getElementById("clock").textContent =
+        now.toLocaleTimeString([], {
+            hour: "numeric",
+            minute: "2-digit",
+            second: "2-digit"
+        });
+
+}
+
+updateClock();
+setInterval(updateClock,1000);
   resizeCanvas();
   drawDots();
 </script>
