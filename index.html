@@ -194,25 +194,132 @@
       border-radius: 24px;
     }
 
-.clock{
-    margin-top:12px;
-    text-align:right;
+.clock {
+  margin-top: 12px;
+  text-align: right;
+  font-family: "Comfortaa", sans-serif;
+  font-size: 1.15rem;
+  font-weight: 500;
+  letter-spacing: .08em;
+  color: var(--cream);
+  opacity: .9;
+  user-select: none;
+}
 
-    font-family:"Comfortaa",sans-serif;
+.digit,
+.sep,
+.ampm {
+  display: inline-block;
+  position: relative;
+}
 
-    font-size:1.15rem;
+.digit {
+  width: .78em;
+  height: 1.25em;
+  vertical-align: bottom;
+  overflow: visible;
+}
 
-    font-weight:500;
+.digit span {
+  position: absolute;
+  inset: 0;
+  text-align: center;
+  will-change: opacity, transform, filter;
+}
 
-    letter-spacing:.08em;
+.digit .old {
+  animation: rollOut .92s cubic-bezier(.22, 1, .36, 1) forwards;
+}
 
-    color:var(--cream);
+.digit .new {
+  animation: rollIn .92s cubic-bezier(.22, 1, .36, 1) forwards;
+}
+@keyframes rollOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0px);
+  }
 
-    opacity:.9;
+  45% {
+    opacity: .55;
+    transform: translateY(16%) scale(1.03);
+    filter: blur(2.5px);
+  }
 
-    user-select:none;
+  100% {
+    opacity: 0;
+    transform: translateY(32%) scale(.98);
+    filter: blur(4px);
+  }
+}
 
-    font-variant-numeric:tabular-nums;
+@keyframes rollIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-32%) scale(.98);
+    filter: blur(4px);
+  }
+
+  45% {
+    opacity: .55;
+    transform: translateY(-8%) scale(1.03);
+    filter: blur(2.5px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0px);
+  }
+}
+
+.ampm {
+  margin-left: .35em;
+  font-size: .7em;
+  opacity: .75;
+}
+
+.digit,
+.sep,
+.ampm{
+    display:inline-block;
+    position:relative;
+}
+
+.digit{
+    width:.78em;
+    height:1.25em;
+    overflow:hidden;
+    vertical-align:bottom;
+}
+
+.digit span{
+    position:absolute;
+    inset:0;
+    text-align:center;
+    transition:
+        opacity .32s ease,
+        transform .32s ease,
+        filter .32s ease;
+}
+
+.digit .old{
+    opacity:0;
+    transform:translateY(-45%);
+    filter:blur(3px);
+}
+
+.digit .new{
+    opacity:1;
+    transform:translateY(0);
+    filter:blur(0);
+}
+
+.ampm{
+    margin-left:.35em;
+    font-size:.7em;
+    opacity:.75;
 }
 .footer-links{
     margin-top:50px;
@@ -243,6 +350,37 @@
 
     letter-spacing:.04em;
 }
+.appointment {
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.appointment-notes {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(-8px);
+
+    transition:
+        max-height .45s ease,
+        opacity .35s ease,
+        transform .35s ease,
+        margin-top .35s ease;
+
+    margin-top: 0;
+}
+.appointment.open .appointment-notes {
+    max-height: 500px;
+    opacity: 1;
+    margin-top: 16px;
+    transform: translateY(0);
+}
+
+.appointment-hint {
+  font-size: 0.85rem;
+  color: rgba(255, 247, 232, 0.4);
+  margin-top: 10px;
+}
 @media (max-width: 850px) {
       .hero {
         grid-template-columns: 1fr;
@@ -265,9 +403,15 @@
   <div class="logo">Bible Study Planner</div>
 
   <div style="text-align:right;">
-      <div class="pill" id="today"></div>
-      <div class="header-clock" id="clock"></div>
+  <div class="pill" id="today"></div>
+
+  <div class="clock" id="clock">
+    <span class="digit"></span><span class="digit"></span><span class="sep">:</span>
+    <span class="digit"></span><span class="digit"></span><span class="sep">:</span>
+    <span class="digit"></span><span class="digit"></span>
+    <span class="ampm"></span>
   </div>
+</div>
 </header>
 
     <section class="hero">
@@ -413,15 +557,22 @@ studies.sort((a, b) => {
       const card = document.createElement("div");
       card.className = "appointment";
 
-      card.innerHTML = `
-        <div>
-          <h3>${study.student}</h3>
-<p><strong>When:</strong> ${formatDate(study.date)} at ${formatTime(study.time)}</p>
-          <p><strong>Status:</strong> ${study.status}</p>
-          ${study.notes ? `<p><strong>Notes:</strong> ${study.notes}</p>` : ""}
-        </div>
-      `;
+card.innerHTML = `
+  <div>
+    <h3>${study.student}</h3>
+    <p><strong>When:</strong> ${formatDate(study.date)} at ${formatTime(study.time)}</p>
+    <p><strong>Status:</strong> ${study.status}</p>
 
+    <div class="appointment-notes">
+      <p><strong>Notes:</strong> ${study.notes || "No notes added."}</p>
+    </div>
+
+    <div class="appointment-hint">Click to view notes</div>
+  </div>
+`;
+card.addEventListener("click", () => {
+  card.classList.toggle("open");
+});
       appointmentsEl.appendChild(card);
     });
   }
@@ -516,21 +667,44 @@ studies.sort((a, b) => {
   });
 
   window.addEventListener("resize", resizeCanvas);
+let previousTime = "";
+
 function updateClock() {
+  const now = new Date();
 
-    const now = new Date();
+  const time = now.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  });
 
-    document.getElementById("clock").textContent =
-        now.toLocaleTimeString([], {
-            hour: "numeric",
-            minute: "2-digit",
-            second: "2-digit"
-        });
+  const [numbers, ampm] = time.split(" ");
+  const cleanTime = numbers.replaceAll(":", "");
+  const digits = document.querySelectorAll(".digit");
 
+  digits.forEach((digit, index) => {
+    const newValue = cleanTime[index];
+    const oldValue = previousTime[index];
+
+    if (!previousTime) {
+      digit.innerHTML = `<span>${newValue}</span>`;
+      return;
+    }
+
+    if (oldValue !== newValue) {
+      digit.innerHTML = `
+        <span class="old">${oldValue}</span>
+        <span class="new">${newValue}</span>
+      `;
+    }
+  });
+
+  document.querySelector(".ampm").textContent = ampm || "";
+  previousTime = cleanTime;
 }
 
 updateClock();
-setInterval(updateClock,1000);
+setInterval(updateClock, 1000);
   resizeCanvas();
   drawDots();
 </script>
