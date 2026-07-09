@@ -431,6 +431,7 @@
           <input id="teacher" placeholder="Teacher / member assigned" required />
           <input id="date" type="text" placeholder="Date — example: 2026-07-06" required />
 <input id="time" type="text" placeholder="Time — example: 7:30 PM" required />
+<input id="location" type="text" placeholder="Location — example: Zion, Zoom, or address" />
 
           <select id="status">
             <option>Scheduled</option>
@@ -562,10 +563,29 @@ card.innerHTML = `
     <h3>${study.student}</h3>
     <p><strong>When:</strong> ${formatDate(study.date)} at ${formatTime(study.time)}</p>
     <p><strong>Status:</strong> ${study.status}</p>
+    ${study.location ? `<p><strong>Location:</strong> ${study.location}</p>` : ""}
 
     <div class="appointment-notes">
-      <p><strong>Notes:</strong> ${study.notes || "No notes added."}</p>
-    </div>
+
+  ${study.location ? `
+    <p>
+      <strong>📍 Location:</strong><br>
+      ${study.location}
+    </p>
+  ` : ""}
+
+  ${study.notes ? `
+    <p style="margin-top:14px;">
+      <strong> Notes:</strong><br>
+      ${study.notes}
+    </p>
+  ` : ""}
+
+  ${(!study.location && !study.notes) ? `
+    <p>No location or notes added.</p>
+  ` : ""}
+
+</div>
 
     <div class="appointment-hint">Click to view notes</div>
   </div>
@@ -589,6 +609,7 @@ card.addEventListener("click", () => {
       teacher: document.getElementById("teacher").value,
       date: document.getElementById("date").value,
       time: document.getElementById("time").value,
+      location: document.getElementById("location").value,
       status: document.getElementById("status").value,
       notes: document.getElementById("notes").value
     };
