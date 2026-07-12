@@ -381,6 +381,56 @@
   color: rgba(255, 247, 232, 0.4);
   margin-top: 10px;
 }
+.previous-title {
+  margin-top: 70px;
+}
+
+.previous-study {
+  opacity: 0.72;
+  background: rgba(255, 247, 232, 0.035);
+}
+
+.previous-study:hover {
+  opacity: 1;
+}
+
+.previous-study h3 {
+  color: var(--pink);
+}
+.map-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.map-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 13px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255, 247, 232, 0.06);
+  color: var(--cream);
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: 0.25s ease;
+}
+
+.map-link:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 247, 232, 0.12);
+  border-color: rgba(247, 167, 196, 0.55);
+}
+
+.map-link.apple:hover {
+  color: var(--pink);
+}
+
+.map-link.google:hover {
+  color: var(--green);
+}
 @media (max-width: 850px) {
       .hero {
         grid-template-columns: 1fr;
@@ -448,28 +498,38 @@
       </div>
     </section>
 
-    <section>
-      <div class="section-title">
-        <h2>Upcoming Studies</h2>
-        <div class="pill" id="count">0 booked</div>
-      </div>
+<section>
+  <div class="section-title">
+    <h2>Upcoming Studies</h2>
+    <div class="pill" id="count">0 upcoming</div>
+  </div>
 
-      <div class="appointments" id="appointments"></div>
+  <div class="appointments" id="appointments"></div>
 
-<div class="footer-links">
+  <div class="section-title previous-title">
+    <h2>Previous Studies</h2>
+    <div class="pill" id="previousCount">0 previous</div>
+  </div>
+
+  <div class="appointments previous-appointments" id="previousAppointments"></div>
+
+  <div class="footer-links">
     <a href="https://mm.watv.org/login.wmc" target="_blank">
-        My Memo
+      My Memo
     </a>
-</div>
-    </section>
+  </div>
+</section>
   </main>
 
   <script>
   const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyMO9mgjzMmzN0QtH0b51FMIuw66eWycAfgij47KkxoR3E1JIJJA8vmUix0x64mwMq9/exec";
 
   const form = document.getElementById("studyForm");
-  const appointmentsEl = document.getElementById("appointments");
-  const countEl = document.getElementById("count");
+const appointmentsEl = document.getElementById("appointments");
+const previousAppointmentsEl = document.getElementById("previousAppointments");
+
+const countEl = document.getElementById("count");
+const previousCountEl = document.getElementById("previousCount");
 
   let studies = [];
 
@@ -533,72 +593,192 @@ function formatTime(value) {
     minute: "2-digit"
   });
 }
+function getStudyDateTime(study) {
+  const dateValue = study.date;
+  const timeValue = study.time;
 
+  let year;
+  let month;
+  let day;
+  let hours = 0;
+  let minutes = 0;
+
+  const dateObject = new Date(dateValue);
+
+  if (!isNaN(dateObject)) {
+    year = dateObject.getFullYear();
+    month = dateObject.getMonth();
+    day = dateObject.getDate();
+  } else {
+    const dateParts = String(dateValue).match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+
+    if (!dateParts) return null;
+
+    year = Number(dateParts[1]);
+    month = Number(dateParts[2]) - 1;
+    day = Number(dateParts[3]);
+  }
+
+  const timeObject = new Date(timeValue);
+
+  if (!isNaN(timeObject) && String(timeValue).includes("T")) {
+    hours = timeObject.getHours();
+    minutes = timeObject.getMinutes();
+  } else {
+    const timeText = String(timeValue).trim();
+    const timeParts = timeText.match(/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i);
+
+    if (!timeParts) return new Date(year, month, day);
+
+    hours = Number(timeParts[1]);
+    minutes = Number(timeParts[2]);
+
+    const period = timeParts[3]?.toUpperCase();
+
+    if (period === "PM" && hours !== 12) hours += 12;
+    if (period === "AM" && hours === 12) hours = 0;
+  }
+
+  return new Date(year, month, day, hours, minutes);
+}
 function renderStudies() {
-    appointmentsEl.innerHTML = "";
+  appointmentsEl.innerHTML = "";
+  previousAppointmentsEl.innerHTML = "";
 
-studies.sort((a, b) => {
-  return `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`);
-});
+  const now = new Date();
 
-    countEl.textContent = `${studies.length} booked`;
+  const upcomingStudies = [];
+  const previousStudies = [];
 
-    if (studies.length === 0) {
-      appointmentsEl.innerHTML = `
-        <div class="empty">
-          No Bible studies booked yet.
-        </div>
-      `;
-      return;
+  studies.forEach(study => {
+    const studyDateTime = getStudyDateTime(study);
+
+    if (studyDateTime && studyDateTime < now) {
+      previousStudies.push(study);
+    } else {
+      upcomingStudies.push(study);
+    }
+  });
+
+  upcomingStudies.sort((a, b) => {
+    const firstDate = getStudyDateTime(a);
+    const secondDate = getStudyDateTime(b);
+
+    return (firstDate?.getTime() || 0) - (secondDate?.getTime() || 0);
+  });
+
+  previousStudies.sort((a, b) => {
+    const firstDate = getStudyDateTime(a);
+    const secondDate = getStudyDateTime(b);
+
+    return (secondDate?.getTime() || 0) - (firstDate?.getTime() || 0);
+  });
+
+  countEl.textContent = `${upcomingStudies.length} upcoming`;
+  previousCountEl.textContent = `${previousStudies.length} previous`;
+
+  function createStudyCard(study, isPrevious = false) {
+    const card = document.createElement("div");
+    card.className = "appointment";
+
+    if (isPrevious) {
+      card.classList.add("previous-study");
     }
 
-    studies.forEach((study) => {
-      const date = new Date(`${study.date} ${study.time}`);
+    card.innerHTML = `
+      <div>
+        <h3>${study.student}</h3>
 
-      const card = document.createElement("div");
-      card.className = "appointment";
+        <p>
+          <strong>When:</strong>
+          ${formatDate(study.date)} at ${formatTime(study.time)}
+        </p>
 
-card.innerHTML = `
-  <div>
-    <h3>${study.student}</h3>
-    <p><strong>When:</strong> ${formatDate(study.date)} at ${formatTime(study.time)}</p>
-    <p><strong>Status:</strong> ${study.status}</p>
-    ${study.location ? `<p><strong>Location:</strong> ${study.location}</p>` : ""}
+        <p>
+          <strong>Status:</strong>
+          ${study.status}
+        </p>
 
-    <div class="appointment-notes">
+        <div class="appointment-notes">
+          ${study.location ? `
+  <p>
+    <strong>Location:</strong><br>
+    ${study.location}
+  </p>
 
-  ${study.location ? `
-    <p>
-      <strong>📍 Location:</strong><br>
-      ${study.location}
-    </p>
-  ` : ""}
+  <div class="map-links">
+    <a
+      class="map-link apple"
+      href="https://maps.apple.com/?q=${encodeURIComponent(study.location)}"
+      target="_blank"
+      rel="noopener noreferrer"
+      onclick="event.stopPropagation()"
+    >
+      Apple Maps
+    </a>
 
-  ${study.notes ? `
-    <p style="margin-top:14px;">
-      <strong> Notes:</strong><br>
-      ${study.notes}
-    </p>
-  ` : ""}
-
-  ${(!study.location && !study.notes) ? `
-    <p>No location or notes added.</p>
-  ` : ""}
-
-</div>
-
-    <div class="appointment-hint">Click to view notes</div>
+    <a
+      class="map-link google"
+      href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(study.location)}"
+      target="_blank"
+      rel="noopener noreferrer"
+      onclick="event.stopPropagation()"
+    >
+      Google Maps
+    </a>
   </div>
-`;
-card.addEventListener("click", () => {
-  card.classList.toggle("open");
-});
-      appointmentsEl.appendChild(card);
+` : ""}
+
+          ${study.notes ? `
+            <p style="margin-top:14px;">
+              <strong>Notes:</strong><br>
+              ${study.notes}
+            </p>
+          ` : ""}
+
+          ${!study.location && !study.notes ? `
+            <p>No location or notes added.</p>
+          ` : ""}
+        </div>
+
+        <div class="appointment-hint">Click to view notes</div>
+      </div>
+    `;
+
+    card.addEventListener("click", () => {
+      card.classList.toggle("open");
+    });
+
+    return card;
+  }
+
+  if (upcomingStudies.length === 0) {
+    appointmentsEl.innerHTML = `
+      <div class="empty">
+        No upcoming Bible studies.
+      </div>
+    `;
+  } else {
+    upcomingStudies.forEach(study => {
+      appointmentsEl.appendChild(createStudyCard(study));
     });
   }
 
-  form.addEventListener("submit", async e => {
-    e.preventDefault();
+  if (previousStudies.length === 0) {
+    previousAppointmentsEl.innerHTML = `
+      <div class="empty">
+        No previous Bible studies.
+      </div>
+    `;
+  } else {
+    previousStudies.forEach(study => {
+      previousAppointmentsEl.appendChild(createStudyCard(study, true));
+    });
+  }
+}
+
+form.addEventListener("submit", async e => {
+  e.preventDefault();
 
     const submitButton = form.querySelector("button");
     submitButton.textContent = "Saving...";
