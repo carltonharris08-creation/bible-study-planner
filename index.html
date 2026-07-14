@@ -431,6 +431,62 @@
 .map-link.google:hover {
   color: var(--green);
 }
+.calendar-links {
+  margin-top: 18px;
+}
+
+.calendar-links-title {
+  margin-bottom: 9px;
+  font-size: 0.78rem;
+  color: rgba(255, 247, 232, 0.48);
+}
+
+.calendar-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.calendar-link {
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 9px 13px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+
+  background: rgba(255, 247, 232, 0.06);
+  color: var(--cream);
+
+  text-decoration: none;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+
+  cursor: pointer;
+  transition:
+    transform 0.25s ease,
+    background 0.25s ease,
+    border-color 0.25s ease,
+    color 0.25s ease;
+}
+
+.calendar-link:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 247, 232, 0.12);
+}
+
+.calendar-link.apple-calendar:hover {
+  color: var(--pink);
+  border-color: rgba(247, 167, 196, 0.55);
+}
+
+.calendar-link.google-calendar:hover {
+  color: var(--green);
+  border-color: rgba(159, 216, 180, 0.55);
+}
 @media (max-width: 850px) {
       .hero {
         grid-template-columns: 1fr;
@@ -641,6 +697,114 @@ function getStudyDateTime(study) {
 
   return new Date(year, month, day, hours, minutes);
 }
+function formatCalendarTimestamp(date) {
+  return date
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.\d{3}/, "");
+}
+
+function buildCalendarDescription(study) {
+  const details = [];
+
+  if (study.teacher) {
+    details.push(`Teacher: ${study.teacher}`);
+  }
+
+  if (study.status) {
+    details.push(`Status: ${study.status}`);
+  }
+
+  if (study.notes) {
+    details.push(`Notes: ${study.notes}`);
+  }
+
+  return details.join("\n");
+}
+
+function createGoogleCalendarUrl(study) {
+  const startDate = getStudyDateTime(study);
+
+  if (!startDate || isNaN(startDate)) {
+    return "";
+  }
+
+  const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+
+  const parameters = new URLSearchParams({
+    action: "TEMPLATE",
+    text: `Bible Study — ${study.student || "Appointment"}`,
+    dates: `${formatCalendarTimestamp(startDate)}/${formatCalendarTimestamp(endDate)}`,
+    details: buildCalendarDescription(study),
+    location: study.location || ""
+  });
+
+  return `https://calendar.google.com/calendar/render?${parameters.toString()}`;
+}
+
+function escapeCalendarText(value) {
+  return String(value || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/\n/g, "\\n")
+    .replace(/,/g, "\\,")
+    .replace(/;/g, "\\;");
+}
+
+function downloadAppleCalendarEvent(study) {
+  const startDate = getStudyDateTime(study);
+
+  if (!startDate || isNaN(startDate)) {
+    alert("This study does not have a valid date and time.");
+    return;
+  }
+
+  const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+  const createdDate = new Date();
+
+  const title = `Bible Study — ${study.student || "Appointment"}`;
+  const description = buildCalendarDescription(study);
+
+  const calendarContent = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "CALSCALE:GREGORIAN",
+    "PRODID:-//Philly3 Bible Study Planner//EN",
+    "BEGIN:VEVENT",
+    `UID:${Date.now()}-${Math.random().toString(36).slice(2)}@philly3-planner`,
+    `DTSTAMP:${formatCalendarTimestamp(createdDate)}`,
+    `DTSTART:${formatCalendarTimestamp(startDate)}`,
+    `DTEND:${formatCalendarTimestamp(endDate)}`,
+    `SUMMARY:${escapeCalendarText(title)}`,
+    `LOCATION:${escapeCalendarText(study.location)}`,
+    `DESCRIPTION:${escapeCalendarText(description)}`,
+    "BEGIN:VALARM",
+    "TRIGGER:-PT30M",
+    "ACTION:DISPLAY",
+    `DESCRIPTION:${escapeCalendarText(`Reminder: ${title}`)}`,
+    "END:VALARM",
+    "END:VEVENT",
+    "END:VCALENDAR"
+  ].join("\r\n");
+
+  const calendarFile = new Blob(
+    [calendarContent],
+    { type: "text/calendar;charset=utf-8" }
+  );
+
+  const downloadUrl = URL.createObjectURL(calendarFile);
+  const downloadLink = document.createElement("a");
+
+  downloadLink.href = downloadUrl;
+  downloadLink.download = `${study.student || "bible-study"}-appointment.ics`;
+
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+  downloadLink.remove();
+
+  setTimeout(() => {
+    URL.revokeObjectURL(downloadUrl);
+  }, 1000);
+}
 function renderStudies() {
   appointmentsEl.innerHTML = "";
   previousAppointmentsEl.innerHTML = "";
@@ -681,11 +845,13 @@ function renderStudies() {
     const card = document.createElement("div");
     card.className = "appointment";
 
-    if (isPrevious) {
-      card.classList.add("previous-study");
-    }
+if (isPrevious) {
+  card.classList.add("previous-study");
+}
 
-    card.innerHTML = `
+const googleCalendarUrl = createGoogleCalendarUrl(study);
+
+card.innerHTML = `
       <div>
         <h3>${study.student}</h3>
 
@@ -739,15 +905,49 @@ function renderStudies() {
           ${!study.location && !study.notes ? `
             <p>No location or notes added.</p>
           ` : ""}
+          ${googleCalendarUrl ? `
+  <div class="calendar-links">
+    <div class="calendar-links-title">Add to your calendar</div>
+
+    <div class="calendar-buttons">
+      <button
+        type="button"
+        class="calendar-link apple-calendar"
+      >
+        Apple Calendar
+      </button>
+
+      <a
+        class="calendar-link google-calendar"
+        href="${googleCalendarUrl}"
+        target="_blank"
+        rel="noopener noreferrer"
+        onclick="event.stopPropagation()"
+      >
+        Google Calendar
+      </a>
+    </div>
+  </div>
+` : ""}
         </div>
 
         <div class="appointment-hint">Click to view notes</div>
       </div>
     `;
 
-    card.addEventListener("click", () => {
-      card.classList.toggle("open");
-    });
+const appleCalendarButton =
+  card.querySelector(".apple-calendar");
+
+if (appleCalendarButton) {
+  appleCalendarButton.addEventListener("click", event => {
+    event.stopPropagation();
+    downloadAppleCalendarEvent(study);
+  });
+}
+
+card.addEventListener("click", () => {
+  card.classList.toggle("open");
+});
 
     return card;
   }
